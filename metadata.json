@@ -1,0 +1,8 @@
+{
+  "name": "Ets Amani",
+  "description": "Système de gestion financière multi-agences professionnel, offline-first, avec contrôle strict et synchronisation pour le Web et l'application mobile.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

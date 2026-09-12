@@ -1,4 +1,4 @@
-ETS AMANI
+Ets AMANI
 
 Plateforme de supervision, de contrôle opérationnel, de traçabilité et de collaboration interne d'Ets AMANI.
 

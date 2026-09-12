@@ -1,0 +1,76 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      let user = getUserData();
+      return user.roles.hasAny(['superviseur', 'admin_principal']);
+    }
+
+    function isAgencyAdmin(agencyId) {
+       let user = getUserData();
+       return user.roles.hasAny(['admin_agence']) && user.agencyId == agencyId;
+    }
+
+    function isAgencyMember(agencyId) {
+       let user = getUserData();
+       return user.agencyId == agencyId;
+    }
+
+    // --- Collections ---
+
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+    }
+
+    match /agencies/{agencyId} {
+      allow read: if isSignedIn() && (isAgencyMember(int(agencyId)) || isAdmin());
+      allow write: if isSignedIn() && isAdmin();
+    }
+
+    match /transactions/{txId} {
+      allow read: if isSignedIn() && (isAgencyMember(resource.data.agencyId) || isAdmin());
+      allow write: if isSignedIn() && (isAgencyMember(request.resource.data.agencyId) || isAdmin());
+    }
+
+    match /slips/{slipId} {
+      allow read: if isSignedIn() && (isAgencyMember(resource.data.agencyId) || isAdmin());
+      allow write: if isSignedIn() && (isAgencyMember(request.resource.data.agencyId) || isAdmin());
+    }
+
+    match /messages/{msgId} {
+      allow read: if isSignedIn() && (isAgencyMember(resource.data.agencyId) || isAdmin());
+      allow create: if isSignedIn() && (isAgencyMember(request.resource.data.agencyId) || isAdmin());
+      allow update: if isSignedIn() && (request.auth.uid == resource.data.senderId || isAdmin());
+    }
+
+    match /alerts/{alertId} {
+      allow read: if isSignedIn() && (isAgencyMember(resource.data.agencyId) || isAdmin());
+      allow write: if isSignedIn() && isAdmin();
+    }
+
+    match /auditLogs/{logId} {
+      allow read: if isSignedIn() && isAdmin();
+      allow create: if isSignedIn();
+    }
+
+    match /debts/{debtId} {
+      allow read: if isSignedIn() && (isAgencyMember(resource.data.agencyId) || isAdmin());
+      allow write: if isSignedIn() && (isAgencyMember(request.resource.data.agencyId) || isAdmin());
+    }
+  }
+}

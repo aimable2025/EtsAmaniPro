@@ -1,0 +1,94 @@
+{
+  "entities": {
+    "User": {
+      "title": "Utilisateur",
+      "description": "Compte utilisateur du système",
+      "type": "object",
+      "properties": {
+        "username": { "type": "string" },
+        "fullName": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "roles": { "type": "array", "items": { "type": "string" } },
+        "agencyId": { "type": "number" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["username", "fullName", "email", "roles", "status", "createdAt"]
+    },
+    "Agency": {
+      "title": "Agence",
+      "description": "Point de vente ou bureau",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "location": { "type": "string" },
+        "currentBalances": { "type": "object" },
+        "exchangeRateUSD_CDF": { "type": "number" },
+        "createdAt": { "type": "number" }
+      }
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Opération financière de base",
+      "type": "object",
+      "properties": {
+        "agencyId": { "type": "number" },
+        "userId": { "type": "number" },
+        "type": { "type": "string" },
+        "amount": { "type": "number" },
+        "currency": { "type": "string" },
+        "timestamp": { "type": "number" },
+        "status": { "type": "string" }
+      }
+    },
+    "Slip": {
+      "title": "Bordereau",
+      "description": "Document comptable complexe",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string" },
+        "status": { "type": "string" },
+        "amount": { "type": "number" },
+        "currency": { "type": "string" },
+        "agencyId": { "type": "number" },
+        "timestamp": { "type": "number" }
+      }
+    },
+    "ChatMessage": {
+      "title": "Message Chat",
+      "description": "Communication interne",
+      "type": "object",
+      "properties": {
+        "localId": { "type": "string" },
+        "senderId": { "type": "number" },
+        "agencyId": { "type": "number" },
+        "recipientGroupId": { "type": "string" },
+        "content": { "type": "string" },
+        "timestamp": { "type": "number" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Profils utilisateurs"
+    },
+    "/agencies/{agencyId}": {
+      "schema": "Agency",
+      "description": "Données des agences"
+    },
+    "/transactions/{txId}": {
+      "schema": "Transaction",
+      "description": "Historique des transactions"
+    },
+    "/slips/{slipId}": {
+      "schema": "Slip",
+      "description": "Bordereaux de caisse"
+    },
+    "/messages/{msgId}": {
+      "schema": "ChatMessage",
+      "description": "Messages sécurisés"
+    }
+  }
+}
