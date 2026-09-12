@@ -36,9 +36,13 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   useEffect(() => {
-    initializeSystem();
-  }, []);
-
+  void initializeSystem().catch((error) => {
+    console.error(
+      'Ets AMANI initialization error:',
+      error
+    );
+  });
+}, []);
   return (
     <AuthProvider>
       <NotificationProvider>
