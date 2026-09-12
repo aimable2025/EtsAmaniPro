@@ -1,35 +1,32 @@
 import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, 
-  GoogleAuthProvider, 
+
+import {
+  getAuth,
+  GoogleAuthProvider,
   FacebookAuthProvider,
-  signInWithPopup, 
-  signInAnonymously, 
-  onAuthStateChanged, 
+  signInWithPopup,
+  onAuthStateChanged,
   User as FirebaseUser,
   RecaptchaVerifier,
   signInWithPhoneNumber,
   ConfirmationResult
 } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+
+import { getFirestore } from 'firebase/firestore';
+
 import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db_fs = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 
-// Validate connection on startup as per guidelines
-async function testConnection() {
-  try {
-    await getDocFromServer(doc(db_fs, 'test', 'connection'));
-    console.log('Firebase connection verified');
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error("Please check your Firebase configuration.");
-    }
-  }
-}
-testConnection();
+export const auth = getAuth(app);
+
+/*
+ * Utilise la base Firestore indiquée dans la configuration
+ * lorsqu'elle existe.
+ */
+export const db_fs = firebaseConfig.firestoreDatabaseId
+  ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
+  : getFirestore(app);
 
 export const googleProvider = new GoogleAuthProvider();
 export const facebookProvider = new FacebookAuthProvider();
@@ -55,32 +52,70 @@ export const signInWithFacebook = async () => {
 };
 
 export const setupRecaptcha = (containerId: string) => {
-  if (!(window as any).recaptchaVerifier) {
-    (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
-      'size': 'invisible',
-      'callback': (response: any) => {
-        // reCAPTCHA solved, allow signInWithPhoneNumber.
+  const existingVerifier = (window as any).recaptchaVerifier;
+
+  if (existingVerifier) {
+    return existingVerifier;
+  }
+
+  const verifier = new RecaptchaVerifier(
+    auth,
+    containerId,
+    {
+      size: 'invisible',
+      callback: () => {
         console.log('Recaptcha solved');
       }
-    });
-  }
-  return (window as any).recaptchaVerifier;
+    }
+  );
+
+  (window as any).recaptchaVerifier = verifier;
+
+  return verifier;
 };
 
-export const sendSmsCode = async (phoneNumber: string, appVerifier: any): Promise<ConfirmationResult> => {
+export const sendSmsCode = async (
+  phoneNumber: string,
+  appVerifier: any
+): Promise<ConfirmationResult> => {
   try {
-    return await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+    return await signInWithPhoneNumber(
+      auth,
+      phoneNumber,
+      appVerifier
+    );
   } catch (error) {
     console.error('SMS sending error:', error);
     throw error;
   }
 };
 
-export const ensureFirebaseAuth = (): Promise<FirebaseUser | null> => {
-  return new Promise((resolve) => {
-    const unsub = onAuthStateChanged(auth, (user) => {
-      unsub();
-      resolve(user);
+export const ensureFirebaseAuth =
+  (): Promise<FirebaseUser | null> => {
+    return new Promise((resolve) => {
+      let resolved = false;
+
+      const unsubscribe = onAuthStateChanged(
+        auth,
+        (user) => {
+          if (!resolved) {
+            resolved = true;
+            unsubscribe();
+            resolve(user);
+          }
+        },
+        (error) => {
+          console.warn(
+            'Firebase Auth state error:',
+            error
+          );
+
+          if (!resolved) {
+            resolved = true;
+            unsubscribe();
+            resolve(null);
+          }
+        }
+      );
     });
-  });
-};
+  };
